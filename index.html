@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Airool Communication Dashboard</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet"/>
+    <script>
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#7C7CE0",
+                        secondary: "#EA9E82",
+                        "background-light": "#F8F5F1",
+                        "background-dark": "#1A1A1A",
+                        "surface-light": "#EFEBE6",
+                        "surface-dark": "#262626",
+                        "card-dark": "#2D2D35",
+                        "text-main": "#333333",
+                        "text-muted": "#888888",
+                    },
+                    fontFamily: {
+                        display: ["Outfit", "sans-serif"],
+                    },
+                    borderRadius: {
+                        DEFAULT: "1rem",
+                        "xl": "1.5rem",
+                    },
+                },
+            },
+        };
+    </script>
+    <style>
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #D1D5DB;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #9CA3AF;
+        }
+        .dark ::-webkit-scrollbar-thumb {
+            background: #4B5563;
+        }
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/"
+  }
+}
+</script>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-text-main dark:text-gray-200 font-display h-screen overflow-hidden">
+    <div id="root"></div>
+    <script type="module" src="/index.tsx"></script>
+</body>
+</html>

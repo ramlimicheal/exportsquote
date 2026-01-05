@@ -1,0 +1,5 @@
+{
+  "name": "ExportFlow - Quick Quote",
+  "description": "A streamlined quote generation application for domestic export businesses, featuring client management, product line items, and logistics calculation.",
+  "requestFramePermissions": []
+}
