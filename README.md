@@ -48,8 +48,8 @@
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/exportflow.git
-cd exportflow
+git clone https://github.com/ramlimicheal/exportsquote.git
+cd exportsquote
 
 # Install dependencies
 npm install
@@ -257,4 +257,3 @@ MIT License - see [LICENSE](LICENSE) for details.
 
 [Report Bug](https://github.com/yourusername/exportflow/issues) · [Request Feature](https://github.com/yourusername/exportflow/issues)
 
-</div>
