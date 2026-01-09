@@ -97,6 +97,69 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ onShowToast, onNavigate }) =>
         pending: 'bg-yellow-100 text-yellow-600 dark:bg-yellow-900/30 dark:text-yellow-400',
         inactive: 'bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400'
     };
+    
+    // Calculate risk score for a client (AI-simulated)
+    const calculateRiskScore = (client: Client): { score: number; level: 'low' | 'medium' | 'high'; factors: string[] } => {
+        const quotes = getClientQuotes(client.id);
+        const approvedQuotes = quotes.filter(q => q.status === 'Approved').length;
+        const conversionRate = quotes.length > 0 ? (approvedQuotes / quotes.length) * 100 : 50;
+        
+        let score = 75; // Base score
+        const factors: string[] = [];
+        
+        // Adjust based on status
+        if (client.status === 'active') score += 10;
+        if (client.status === 'pending') { score -= 10; factors.push('New client - limited history'); }
+        if (client.status === 'inactive') { score -= 30; factors.push('Inactive client'); }
+        
+        // Adjust based on conversion
+        if (conversionRate >= 80) score += 10;
+        if (conversionRate < 50) { score -= 15; factors.push('Low conversion rate'); }
+        
+        // Adjust based on credit
+        const creditLimit = parseInt((client.creditLimit || '$0').replace(/[$,]/g, ''));
+        if (creditLimit >= 100000) score += 5;
+        if (creditLimit < 25000) { factors.push('Low credit limit'); }
+        
+        // Risk score based on tier if available
+        if ((client as any).riskScore) {
+            score = Math.round(((client as any).riskScore / 100) * score + score * 0.5);
+        }
+        
+        score = Math.max(0, Math.min(100, score));
+        const level: 'low' | 'medium' | 'high' = score >= 70 ? 'low' : score >= 40 ? 'medium' : 'high';
+        
+        return { score, level, factors };
+    };
+    
+    // Generate AI recommendations for client
+    const getAIRecommendations = (client: Client): Array<{type: string; text: string; priority: 'high' | 'medium' | 'low'}> => {
+        const quotes = getClientQuotes(client.id);
+        const recommendations: Array<{type: string; text: string; priority: 'high' | 'medium' | 'low'}> = [];
+        
+        if (quotes.length === 0) {
+            recommendations.push({ type: 'quote', text: 'Create initial quote to establish relationship', priority: 'high' });
+        }
+        
+        if (client.status === 'pending') {
+            recommendations.push({ type: 'onboarding', text: 'Complete client verification process', priority: 'high' });
+        }
+        
+        const pendingQuotes = quotes.filter(q => q.status === 'Sent');
+        if (pendingQuotes.length > 0) {
+            recommendations.push({ type: 'followup', text: `Follow up on ${pendingQuotes.length} pending quote(s)`, priority: 'medium' });
+        }
+        
+        if (quotes.length >= 3) {
+            recommendations.push({ type: 'upsell', text: 'Consider volume discount or credit increase', priority: 'low' });
+        }
+        
+        if ((client as any).industry === 'textiles') {
+            recommendations.push({ type: 'product', text: 'New Cotton Premium line matches client profile', priority: 'medium' });
+        }
+        
+        return recommendations.slice(0, 3);
+    };
 
     return (
         <main className="flex-1 flex h-full bg-background-light dark:bg-background-dark overflow-hidden">
@@ -205,6 +268,37 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ onShowToast, onNavigate }) =>
                                 </div>
                             </div>
 
+                            {/* Risk Score Badge */}
+                            {(() => {
+                                const risk = calculateRiskScore(selectedClient);
+                                return (
+                                    <div className={`mx-6 -mt-4 mb-4 p-3 rounded-xl border flex items-center gap-3 ${
+                                        risk.level === 'low' ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800' :
+                                        risk.level === 'medium' ? 'bg-yellow-50 dark:bg-yellow-900/20 border-yellow-200 dark:border-yellow-800' :
+                                        'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
+                                    }`}>
+                                        <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg ${
+                                            risk.level === 'low' ? 'bg-green-500 text-white' :
+                                            risk.level === 'medium' ? 'bg-yellow-500 text-white' :
+                                            'bg-red-500 text-white'
+                                        }`}>
+                                            {risk.score}
+                                        </div>
+                                        <div className="flex-1">
+                                            <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                                                Risk Score: {risk.level === 'low' ? 'Low Risk' : risk.level === 'medium' ? 'Medium Risk' : 'High Risk'}
+                                            </p>
+                                            {risk.factors.length > 0 && (
+                                                <p className="text-xs text-gray-500">
+                                                    {risk.factors.join(' • ')}
+                                                </p>
+                                            )}
+                                        </div>
+                                        <span className="material-icons-outlined text-gray-400">security</span>
+                                    </div>
+                                );
+                            })()}
+
                             {/* Stats */}
                             <div className="grid grid-cols-4 divide-x divide-gray-100 dark:divide-gray-700 border-b border-gray-100 dark:border-gray-700">
                                 <div className="p-4 text-center">
@@ -232,6 +326,37 @@ const ClientsPage: React.FC<ClientsPageProps> = ({ onShowToast, onNavigate }) =>
                                     <p className="text-xs text-gray-500 mt-1">Status</p>
                                 </div>
                             </div>
+                            
+                            {/* AI Recommendations */}
+                            {(() => {
+                                const recommendations = getAIRecommendations(selectedClient);
+                                if (recommendations.length === 0) return null;
+                                return (
+                                    <div className="p-4 bg-purple-50 dark:bg-purple-900/20 border-b border-purple-100 dark:border-purple-800/30">
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <span className="material-icons-outlined text-purple-500">auto_awesome</span>
+                                            <span className="text-sm font-semibold text-purple-700 dark:text-purple-300">AI Recommendations</span>
+                                        </div>
+                                        <div className="space-y-2">
+                                            {recommendations.map((rec, i) => (
+                                                <div key={i} className="flex items-center gap-2 text-sm">
+                                                    <span className={`w-1.5 h-1.5 rounded-full ${
+                                                        rec.priority === 'high' ? 'bg-red-500' :
+                                                        rec.priority === 'medium' ? 'bg-yellow-500' : 'bg-gray-400'
+                                                    }`} />
+                                                    <span className="text-gray-700 dark:text-gray-300">{rec.text}</span>
+                                                    <button 
+                                                        onClick={() => onShowToast('info', 'Action', `${rec.type} action initiated...`)}
+                                                        className="ml-auto text-purple-600 hover:underline text-xs"
+                                                    >
+                                                        Take Action
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </div>
+                                );
+                            })()}
 
                             {/* Details */}
                             <div className="p-6 grid grid-cols-2 gap-6">

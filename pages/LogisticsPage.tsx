@@ -13,6 +13,40 @@ const LogisticsPage: React.FC<LogisticsPageProps> = ({ onShowToast }) => {
     const [selectedIncoterm, setSelectedIncoterm] = useState<string | null>(null);
     const [calculatorWeight, setCalculatorWeight] = useState(1000);
     const [calculatorVolume, setCalculatorVolume] = useState(10);
+    const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null);
+    const [showCostComparison, setShowCostComparison] = useState(false);
+    
+    // Simulated tracking data
+    const getTrackingSteps = (shipment: Shipment) => {
+        const allSteps = [
+            { status: 'pending', label: 'Order Confirmed', icon: 'check_circle', date: shipment.shipDate },
+            { status: 'pending', label: 'Picked Up', icon: 'inventory', date: shipment.shipDate },
+            { status: 'in_transit', label: 'In Transit', icon: 'local_shipping', date: '' },
+            { status: 'customs', label: 'Customs Clearance', icon: 'gavel', date: '' },
+            { status: 'delivered', label: 'Delivered', icon: 'where_to_vote', date: shipment.eta },
+        ];
+        
+        const statusOrder = ['pending', 'in_transit', 'customs', 'delivered'];
+        const currentIndex = statusOrder.indexOf(shipment.status);
+        
+        return allSteps.map((step, i) => ({
+            ...step,
+            completed: i <= currentIndex,
+            current: statusOrder[i] === shipment.status,
+        }));
+    };
+    
+    // Shipping cost comparison data
+    const getShippingCosts = (weight: number, volume: number) => {
+        const chargeableWeight = Math.max(weight, volume * 167); // Volumetric conversion
+        return [
+            { carrier: 'Maersk Line', mode: 'Sea (FCL)', days: '25-30', cost: Math.round(chargeableWeight * 0.15), reliability: 95 },
+            { carrier: 'MSC', mode: 'Sea (FCL)', days: '28-32', cost: Math.round(chargeableWeight * 0.12), reliability: 92 },
+            { carrier: 'DHL Express', mode: 'Air', days: '3-5', cost: Math.round(chargeableWeight * 2.5), reliability: 98 },
+            { carrier: 'FedEx', mode: 'Air', days: '4-6', cost: Math.round(chargeableWeight * 2.3), reliability: 97 },
+            { carrier: 'DB Schenker', mode: 'Rail', days: '15-18', cost: Math.round(chargeableWeight * 0.35), reliability: 88 },
+        ].sort((a, b) => a.cost - b.cost);
+    };
 
     const filteredShipments = useMemo(() => {
         if (statusFilter === 'all') return shipments;
@@ -138,16 +172,72 @@ const LogisticsPage: React.FC<LogisticsPageProps> = ({ onShowToast }) => {
                                                     <span className="text-gray-400 block mb-1">Container</span>
                                                     <span className="font-medium">{shipment.container.replace('_', ' ').toUpperCase()}</span>
                                                 </div>
-                                                <div className="text-right">
+                                                <div className="flex items-center gap-2 justify-end">
+                                                    <button
+                                                        onClick={() => setSelectedShipment(selectedShipment?.id === shipment.id ? null : shipment)}
+                                                        className="text-primary hover:underline flex items-center gap-1"
+                                                    >
+                                                        <span className="material-icons-outlined text-sm">visibility</span>
+                                                        Details
+                                                    </button>
                                                     <button
                                                         onClick={() => handleTrack(shipment)}
-                                                        className="text-primary hover:underline flex items-center gap-1 ml-auto"
+                                                        className="text-primary hover:underline flex items-center gap-1"
                                                     >
                                                         <span className="material-icons-outlined text-sm">track_changes</span>
                                                         Track
                                                     </button>
                                                 </div>
                                             </div>
+                                            
+                                            {/* Expanded Tracking View */}
+                                            {selectedShipment?.id === shipment.id && (
+                                                <div className="mt-4 pt-4 border-t border-gray-100 dark:border-gray-700">
+                                                    <p className="text-xs font-semibold text-gray-500 uppercase mb-3">Live Tracking</p>
+                                                    <div className="flex items-center justify-between">
+                                                        {getTrackingSteps(shipment).map((step, i) => (
+                                                            <div key={i} className="flex flex-col items-center flex-1">
+                                                                <div className={`w-8 h-8 rounded-full flex items-center justify-center mb-2 ${
+                                                                    step.completed 
+                                                                        ? step.current ? 'bg-primary text-white animate-pulse' : 'bg-green-500 text-white'
+                                                                        : 'bg-gray-200 dark:bg-gray-700 text-gray-400'
+                                                                }`}>
+                                                                    <span className="material-icons-outlined text-sm">{step.icon}</span>
+                                                                </div>
+                                                                <p className={`text-[10px] text-center ${
+                                                                    step.completed ? 'text-gray-700 dark:text-gray-300' : 'text-gray-400'
+                                                                }`}>
+                                                                    {step.label}
+                                                                </p>
+                                                                {step.date && <p className="text-[9px] text-gray-400">{step.date}</p>}
+                                                                {i < 4 && (
+                                                                    <div className={`absolute w-12 h-0.5 mt-4 ml-16 ${
+                                                                        step.completed ? 'bg-green-500' : 'bg-gray-200 dark:bg-gray-700'
+                                                                    }`} style={{ transform: 'translateX(50%)' }} />
+                                                                )}
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                    
+                                                    {/* AI Route Insight */}
+                                                    <div className="mt-4 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-xl border border-purple-100 dark:border-purple-800/30">
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <span className="material-icons-outlined text-purple-500 text-sm">auto_awesome</span>
+                                                            <span className="text-xs font-semibold text-purple-700 dark:text-purple-300">AI Route Insight</span>
+                                                        </div>
+                                                        <p className="text-xs text-gray-600 dark:text-gray-400">
+                                                            {shipment.status === 'in_transit' 
+                                                                ? 'Shipment is on schedule. Current location: Singapore Hub. Weather conditions favorable.'
+                                                                : shipment.status === 'customs'
+                                                                ? 'Customs processing in progress. Expected clearance within 24-48 hours.'
+                                                                : shipment.status === 'delivered'
+                                                                ? 'Successfully delivered. Average transit time was within expected range.'
+                                                                : 'Shipment is being prepared. Estimated pickup: Tomorrow 9:00 AM'
+                                                            }
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            )}
                                         </div>
                                     ))}
                                 </div>
@@ -195,6 +285,48 @@ const LogisticsPage: React.FC<LogisticsPageProps> = ({ onShowToast }) => {
                                         {recommendation.utilization.toFixed(1)}% utilization
                                     </p>
                                 </div>
+                                
+                                {/* Cost Comparison Toggle */}
+                                <button
+                                    onClick={() => setShowCostComparison(!showCostComparison)}
+                                    className="w-full py-2 text-sm text-primary border border-primary/30 rounded-lg hover:bg-primary/5 transition-colors flex items-center justify-center gap-2"
+                                >
+                                    <span className="material-icons-outlined text-sm">compare</span>
+                                    {showCostComparison ? 'Hide' : 'Compare'} Shipping Costs
+                                </button>
+                                
+                                {/* Cost Comparison Panel */}
+                                {showCostComparison && (
+                                    <div className="bg-gray-50 dark:bg-gray-800 rounded-xl p-3">
+                                        <p className="text-xs font-semibold text-gray-500 uppercase mb-2">Carrier Comparison</p>
+                                        <div className="space-y-2">
+                                            {getShippingCosts(calculatorWeight, calculatorVolume).slice(0, 4).map((option, i) => (
+                                                <div key={i} className={`p-2 rounded-lg border ${i === 0 ? 'border-green-300 bg-green-50 dark:bg-green-900/20' : 'border-gray-200 dark:border-gray-700'}`}>
+                                                    <div className="flex items-center justify-between mb-1">
+                                                        <span className="text-xs font-medium">{option.carrier}</span>
+                                                        <span className={`text-xs font-bold ${i === 0 ? 'text-green-600' : 'text-gray-600 dark:text-gray-400'}`}>
+                                                            ${option.cost.toLocaleString()}
+                                                        </span>
+                                                    </div>
+                                                    <div className="flex items-center justify-between text-[10px] text-gray-500">
+                                                        <span>{option.mode}</span>
+                                                        <span>{option.days} days</span>
+                                                        <span className="flex items-center gap-0.5">
+                                                            <span className="material-icons-outlined text-[10px] text-green-500">verified</span>
+                                                            {option.reliability}%
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <button
+                                            onClick={() => onShowToast('success', 'Best Rate', 'Recommended: ' + getShippingCosts(calculatorWeight, calculatorVolume)[0].carrier)}
+                                            className="w-full mt-2 py-1.5 bg-primary text-white text-xs rounded-lg hover:bg-primary/90"
+                                        >
+                                            Get Best Quote
+                                        </button>
+                                    </div>
+                                )}
 
                                 <div className="grid grid-cols-3 gap-2 text-xs">
                                     <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-2 text-center">

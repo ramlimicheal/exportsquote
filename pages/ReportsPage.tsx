@@ -6,8 +6,39 @@ interface ReportsPageProps {
 }
 
 const ReportsPage: React.FC<ReportsPageProps> = ({ onShowToast }) => {
-    const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'clients'>('overview');
+    const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'clients' | 'forecasts'>('overview');
     const [timeRange, setTimeRange] = useState<'6m' | '1y' | 'all'>('6m');
+    const [showGoalEditor, setShowGoalEditor] = useState(false);
+    
+    // Goals and targets
+    const goals = {
+        monthlyRevenue: 300000,
+        conversionRate: 80,
+        avgDealSize: 50000,
+        newClients: 5
+    };
+    
+    // Current progress
+    const currentProgress = {
+        monthlyRevenue: ANALYTICS.totalRevenue / 6, // Avg monthly
+        conversionRate: ANALYTICS.conversionRate,
+        avgDealSize: ANALYTICS.avgQuoteValue,
+        newClients: 3
+    };
+    
+    // AI-generated forecast
+    const forecast = {
+        nextMonthRevenue: Math.round(ANALYTICS.totalRevenue / 6 * 1.08),
+        quarterlyGrowth: 12.5,
+        riskFactors: [
+            { factor: 'Seasonal demand fluctuation', impact: 'medium', suggestion: 'Consider promotional pricing in Q2' },
+            { factor: 'Client concentration', impact: 'high', suggestion: 'Diversify client base to reduce dependency' },
+        ],
+        opportunities: [
+            { opportunity: 'Textile exports to EU', potential: '$125,000', confidence: 78 },
+            { opportunity: 'New chemical product line', potential: '$85,000', confidence: 65 },
+        ]
+    };
 
     const formatCurrency = (value: number) => {
         if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
@@ -66,8 +97,9 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ onShowToast }) => {
                 <div className="flex gap-6">
                     {[
                         { id: 'overview', label: 'Overview', icon: 'dashboard' },
-                        { id: 'products', label: 'Product Performance', icon: 'inventory_2' },
-                        { id: 'clients', label: 'Client Analytics', icon: 'groups' }
+                        { id: 'products', label: 'Products', icon: 'inventory_2' },
+                        { id: 'clients', label: 'Clients', icon: 'groups' },
+                        { id: 'forecasts', label: 'AI Forecasts', icon: 'auto_awesome', badge: 'NEW' }
                     ].map(tab => (
                         <button
                             key={tab.id}
@@ -79,6 +111,11 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ onShowToast }) => {
                         >
                             <span className="material-icons-outlined text-sm">{tab.icon}</span>
                             {tab.label}
+                            {(tab as any).badge && (
+                                <span className="px-1.5 py-0.5 bg-purple-500 text-white text-[10px] font-bold rounded-full">
+                                    {(tab as any).badge}
+                                </span>
+                            )}
                         </button>
                     ))}
                 </div>
@@ -88,6 +125,49 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ onShowToast }) => {
             <div className="flex-1 overflow-y-auto p-8">
                 {activeTab === 'overview' && (
                     <div className="space-y-6">
+                        {/* Goal Progress Section */}
+                        <div className="bg-gradient-to-br from-primary/10 to-purple-500/10 dark:from-primary/20 dark:to-purple-900/20 rounded-2xl p-5 border border-primary/20">
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center gap-2">
+                                    <span className="material-icons-outlined text-primary">flag</span>
+                                    <h3 className="font-bold text-gray-800 dark:text-white">Monthly Goals Progress</h3>
+                                </div>
+                                <button 
+                                    onClick={() => { setShowGoalEditor(!showGoalEditor); onShowToast('info', 'Goal Editor', 'Coming soon!'); }}
+                                    className="text-xs text-primary hover:underline flex items-center gap-1"
+                                >
+                                    <span className="material-icons-outlined text-xs">edit</span>
+                                    Edit Goals
+                                </button>
+                            </div>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                {[
+                                    { label: 'Revenue', current: currentProgress.monthlyRevenue, goal: goals.monthlyRevenue, format: formatCurrency },
+                                    { label: 'Conversion', current: currentProgress.conversionRate, goal: goals.conversionRate, format: (v: number) => `${v}%` },
+                                    { label: 'Avg Deal', current: currentProgress.avgDealSize, goal: goals.avgDealSize, format: formatCurrency },
+                                    { label: 'New Clients', current: currentProgress.newClients, goal: goals.newClients, format: (v: number) => v.toString() },
+                                ].map((item, i) => {
+                                    const progress = Math.min((item.current / item.goal) * 100, 100);
+                                    const isOnTrack = progress >= 70;
+                                    return (
+                                        <div key={i} className="bg-white dark:bg-surface-dark rounded-xl p-3">
+                                            <p className="text-xs text-gray-500 mb-1">{item.label}</p>
+                                            <p className="text-lg font-bold text-gray-800 dark:text-white">{item.format(item.current)}</p>
+                                            <div className="mt-2 h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                                                <div 
+                                                    className={`h-full rounded-full transition-all ${isOnTrack ? 'bg-green-500' : 'bg-yellow-500'}`}
+                                                    style={{ width: `${progress}%` }}
+                                                />
+                                            </div>
+                                            <p className="text-[10px] text-gray-400 mt-1">
+                                                {progress.toFixed(0)}% of {item.format(item.goal)} goal
+                                            </p>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                        
                         {/* KPI Cards */}
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                             <div className="bg-white dark:bg-surface-dark rounded-2xl p-5 shadow-sm">
@@ -298,6 +378,147 @@ const ReportsPage: React.FC<ReportsPageProps> = ({ onShowToast }) => {
                                     </div>
                                 </div>
                                 <p className="text-2xl font-bold text-blue-600">2,400 units</p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {activeTab === 'forecasts' && (
+                    <div className="space-y-6">
+                        {/* AI Forecast Header */}
+                        <div className="bg-gradient-to-r from-purple-500 to-indigo-600 rounded-2xl p-6 text-white">
+                            <div className="flex items-center gap-3 mb-4">
+                                <span className="material-icons-outlined text-3xl">auto_awesome</span>
+                                <div>
+                                    <h2 className="text-xl font-bold">AI-Powered Forecasts</h2>
+                                    <p className="text-sm opacity-80">Predictive analytics based on your historical data</p>
+                                </div>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="bg-white/10 rounded-xl p-4">
+                                    <p className="text-sm opacity-80 mb-1">Next Month Revenue</p>
+                                    <p className="text-2xl font-bold">{formatCurrency(forecast.nextMonthRevenue)}</p>
+                                    <p className="text-xs text-green-300 flex items-center gap-1 mt-1">
+                                        <span className="material-icons-outlined text-xs">trending_up</span>
+                                        +8% projected growth
+                                    </p>
+                                </div>
+                                <div className="bg-white/10 rounded-xl p-4">
+                                    <p className="text-sm opacity-80 mb-1">Quarterly Growth</p>
+                                    <p className="text-2xl font-bold">{forecast.quarterlyGrowth}%</p>
+                                    <p className="text-xs opacity-70 mt-1">Based on current trajectory</p>
+                                </div>
+                                <div className="bg-white/10 rounded-xl p-4">
+                                    <p className="text-sm opacity-80 mb-1">Confidence Score</p>
+                                    <p className="text-2xl font-bold">82%</p>
+                                    <p className="text-xs opacity-70 mt-1">High prediction accuracy</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            {/* Risk Factors */}
+                            <div className="bg-white dark:bg-surface-dark rounded-2xl p-5 shadow-sm">
+                                <div className="flex items-center gap-2 mb-4">
+                                    <span className="material-icons-outlined text-orange-500">warning</span>
+                                    <h3 className="font-bold">Risk Factors</h3>
+                                </div>
+                                <div className="space-y-3">
+                                    {forecast.riskFactors.map((risk, i) => (
+                                        <div key={i} className="p-3 bg-orange-50 dark:bg-orange-900/20 rounded-xl border border-orange-100 dark:border-orange-800/30">
+                                            <div className="flex items-start justify-between mb-2">
+                                                <p className="font-medium text-sm text-gray-800 dark:text-gray-200">{risk.factor}</p>
+                                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                                                    risk.impact === 'high' ? 'bg-red-100 text-red-600' :
+                                                    risk.impact === 'medium' ? 'bg-yellow-100 text-yellow-600' :
+                                                    'bg-green-100 text-green-600'
+                                                }`}>
+                                                    {risk.impact} impact
+                                                </span>
+                                            </div>
+                                            <p className="text-xs text-gray-500 flex items-start gap-1">
+                                                <span className="material-icons-outlined text-xs text-primary mt-0.5">lightbulb</span>
+                                                {risk.suggestion}
+                                            </p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                            
+                            {/* Opportunities */}
+                            <div className="bg-white dark:bg-surface-dark rounded-2xl p-5 shadow-sm">
+                                <div className="flex items-center gap-2 mb-4">
+                                    <span className="material-icons-outlined text-green-500">rocket_launch</span>
+                                    <h3 className="font-bold">Growth Opportunities</h3>
+                                </div>
+                                <div className="space-y-3">
+                                    {forecast.opportunities.map((opp, i) => (
+                                        <div key={i} className="p-3 bg-green-50 dark:bg-green-900/20 rounded-xl border border-green-100 dark:border-green-800/30">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <p className="font-medium text-sm text-gray-800 dark:text-gray-200">{opp.opportunity}</p>
+                                                <span className="text-green-600 font-bold">{opp.potential}</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <div className="flex-1 h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full">
+                                                    <div 
+                                                        className="h-full bg-green-500 rounded-full" 
+                                                        style={{ width: `${opp.confidence}%` }}
+                                                    />
+                                                </div>
+                                                <span className="text-xs text-gray-500">{opp.confidence}% confidence</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                                <button 
+                                    onClick={() => onShowToast('info', 'Opportunity Analysis', 'Generating detailed analysis...')}
+                                    className="w-full mt-4 py-2 text-sm text-primary hover:bg-primary/5 rounded-lg transition-colors"
+                                >
+                                    View Full Analysis
+                                </button>
+                            </div>
+                        </div>
+                        
+                        {/* Trend Predictions */}
+                        <div className="bg-white dark:bg-surface-dark rounded-2xl p-5 shadow-sm">
+                            <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center gap-2">
+                                    <span className="material-icons-outlined text-blue-500">show_chart</span>
+                                    <h3 className="font-bold">12-Month Revenue Projection</h3>
+                                </div>
+                                <span className="text-xs text-gray-500 flex items-center gap-1">
+                                    <span className="material-icons-outlined text-xs">info</span>
+                                    Based on historical trends and market analysis
+                                </span>
+                            </div>
+                            <div className="flex items-end gap-2 h-48">
+                                {[...ANALYTICS.monthlyData, 
+                                    { month: 'Jan', revenue: forecast.nextMonthRevenue },
+                                    { month: 'Feb', revenue: Math.round(forecast.nextMonthRevenue * 1.05) },
+                                    { month: 'Mar', revenue: Math.round(forecast.nextMonthRevenue * 1.12) },
+                                ].map((month, index, arr) => {
+                                    const isForecast = index >= ANALYTICS.monthlyData.length;
+                                    const maxRev = Math.max(...arr.map(m => m.revenue));
+                                    return (
+                                        <div key={month.month} className="flex-1 flex flex-col items-center gap-2">
+                                            <div className="w-full flex flex-col items-center">
+                                                <span className={`text-xs font-semibold mb-1 ${isForecast ? 'text-purple-500' : 'text-primary'}`}>
+                                                    {formatCurrency(month.revenue)}
+                                                </span>
+                                                <div
+                                                    className={`w-full rounded-t-lg transition-all ${isForecast 
+                                                        ? 'bg-gradient-to-t from-purple-500 to-purple-300 opacity-70 border-2 border-dashed border-purple-400' 
+                                                        : 'bg-gradient-to-t from-primary to-primary/60'}`}
+                                                    style={{ height: `${(month.revenue / maxRev) * 150}px` }}
+                                                />
+                                            </div>
+                                            <span className={`text-xs ${isForecast ? 'text-purple-500 font-medium' : 'text-gray-500'}`}>
+                                                {month.month}
+                                                {isForecast && <span className="block text-[8px]">(forecast)</span>}
+                                            </span>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
                     </div>

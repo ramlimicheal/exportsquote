@@ -3,7 +3,14 @@
 <head>
     <meta charset="utf-8"/>
     <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>Airool Communication Dashboard</title>
+    <title>ExportFlow - Smart Export Management</title>
+    <meta name="description" content="AI-powered export quote management with smart container optimization, margin protection, and instant WhatsApp sharing" />
+    <meta name="theme-color" content="#3B82F6" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="ExportFlow" />
+    <link rel="manifest" href="/manifest.json" />
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚀</text></svg>" />
     <script src="https://cdn.tailwindcss.com?plugins=forms,typography"></script>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet"/>
@@ -35,6 +42,7 @@
         };
     </script>
     <style>
+        /* Custom scrollbar */
         ::-webkit-scrollbar {
             width: 6px;
             height: 6px;
@@ -59,19 +67,128 @@
             -ms-overflow-style: none;
             scrollbar-width: none;
         }
+        
+        /* Mobile optimizations */
+        @media (max-width: 768px) {
+            body {
+                overflow-x: hidden;
+            }
+            * {
+                -webkit-tap-highlight-color: transparent;
+            }
+            input, select, textarea, button {
+                font-size: 16px !important; /* Prevents zoom on iOS */
+            }
+        }
+        
+        /* Touch-friendly hover states */
+        @media (hover: none) {
+            .hover\:bg-gray-100:hover {
+                background-color: transparent;
+            }
+        }
+        
+        /* Smooth transitions */
+        .transition-all {
+            transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        /* Skeleton loading animation */
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        .skeleton {
+            background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+        .dark .skeleton {
+            background: linear-gradient(90deg, #2d2d35 25%, #3d3d45 50%, #2d2d35 75%);
+            background-size: 200% 100%;
+        }
+        
+        /* Pulse animation for notifications */
+        @keyframes pulse-ring {
+            0% { transform: scale(0.8); opacity: 0.5; }
+            50% { transform: scale(1); opacity: 0; }
+            100% { transform: scale(0.8); opacity: 0.5; }
+        }
+        .animate-pulse-ring {
+            animation: pulse-ring 2s ease-out infinite;
+        }
+        
+        /* Slide-in animation */
+        @keyframes slide-in-right {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        .animate-slide-in-right {
+            animation: slide-in-right 0.3s ease-out;
+        }
+        
+        /* Fade-in animation */
+        @keyframes fade-in {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        .animate-fade-in {
+            animation: fade-in 0.2s ease-out;
+        }
+        
+        /* Scale-in animation */
+        @keyframes scale-in {
+            from { transform: scale(0.95); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+        .animate-scale-in {
+            animation: scale-in 0.2s ease-out;
+        }
+        
+        /* Safe area padding for notched devices */
+        @supports (padding: env(safe-area-inset-bottom)) {
+            .safe-area-bottom {
+                padding-bottom: env(safe-area-inset-bottom);
+            }
+            .safe-area-top {
+                padding-top: env(safe-area-inset-top);
+            }
+        }
+        
+        /* Glass morphism effect */
+        .glass {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+        .dark .glass {
+            background: rgba(26, 26, 26, 0.7);
+        }
+        
+        /* Print styles */
+        @media print {
+            .no-print {
+                display: none !important;
+            }
+        }
     </style>
-<script type="importmap">
-{
-  "imports": {
-    "react/": "https://esm.sh/react@^19.2.3/",
-    "react": "https://esm.sh/react@^19.2.3",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/"
-  }
-}
-</script>
 </head>
 <body class="bg-background-light dark:bg-background-dark text-text-main dark:text-gray-200 font-display h-screen overflow-hidden">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
+    <script>
+        // Register Service Worker for PWA
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js')
+                    .then((registration) => {
+                        console.log('[ExportFlow] SW registered:', registration.scope);
+                    })
+                    .catch((error) => {
+                        console.log('[ExportFlow] SW registration failed:', error);
+                    });
+            });
+        }
+    </script>
 </body>
 </html>

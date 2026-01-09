@@ -21,10 +21,12 @@ const NavigationRail: React.FC<NavigationRailProps> = ({
   const [showUserMenu, setShowUserMenu] = useState(false);
 
   const navItems: { icon: string; view: ViewType; label: string }[] = [
+    { icon: 'dashboard', view: 'dashboard', label: 'Dashboard' },
     { icon: 'request_quote', view: 'quotes', label: 'Quotes' },
     { icon: 'inventory_2', view: 'products', label: 'Products' },
     { icon: 'local_shipping', view: 'logistics', label: 'Logistics' },
     { icon: 'groups', view: 'clients', label: 'Clients' },
+    { icon: 'description', view: 'documents', label: 'Documents' },
     { icon: 'analytics', view: 'reports', label: 'Reports' }
   ];
 
@@ -36,16 +38,16 @@ const NavigationRail: React.FC<NavigationRailProps> = ({
 
   return (
     <aside className="w-16 hidden md:flex flex-col items-center py-6 border-r border-gray-200 dark:border-gray-800 bg-background-light dark:bg-background-dark flex-shrink-0 z-20 relative">
-      {/* Dashboard/Home Button */}
+      {/* Logo/Home Button */}
       <div className="mb-8">
         <button
-          onClick={() => onNavigate('quotes')}
+          onClick={() => onNavigate('dashboard')}
           className="p-2 rounded-xl hover:bg-white dark:hover:bg-surface-dark transition-all"
-          aria-label="Go to dashboard"
-          title="Dashboard"
+          aria-label="Go to home"
+          title="ExportFlow"
         >
-          <span className="material-icons-outlined text-gray-500 hover:text-primary cursor-pointer text-2xl">
-            dashboard
+          <span className="material-icons-outlined text-primary cursor-pointer text-2xl">
+            rocket_launch
           </span>
         </button>
       </div>
@@ -158,11 +160,15 @@ const NavigationRail: React.FC<NavigationRailProps> = ({
                 <p className="text-xs text-gray-500">alex@exportflow.com</p>
               </div>
               <div className="py-1">
-                <button className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-2">
+                <button 
+                  onClick={() => { onNavigate('profile'); setShowUserMenu(false); }}
+                  className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-2">
                   <span className="material-icons-outlined text-sm text-gray-400">person</span>
                   Profile
                 </button>
-                <button className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-2">
+                <button 
+                  onClick={() => { onNavigate('settings'); setShowUserMenu(false); }}
+                  className="w-full px-3 py-2 text-left text-sm hover:bg-gray-50 dark:hover:bg-gray-800 flex items-center gap-2">
                   <span className="material-icons-outlined text-sm text-gray-400">settings</span>
                   Settings
                 </button>

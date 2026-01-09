@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { DOCUMENTS } from '../constants';
 import { Quote, Client, Document } from '../types';
+import AIInsightsPanel from './AIInsightsPanel';
 
 interface DetailsPanelProps {
     className?: string;
@@ -192,6 +193,9 @@ const DetailsPanel: React.FC<DetailsPanelProps> = ({
                     })}
                 </div>
             </div>
+
+            {/* AI Insights Panel */}
+            <AIInsightsPanel onShowToast={onShowToast} className="mb-6" />
 
             {/* Pro Tip */}
             <div className="mt-auto bg-gradient-to-br from-indigo-500 to-purple-600 p-4 rounded-2xl text-white shadow-lg">

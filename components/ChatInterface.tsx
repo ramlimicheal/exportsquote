@@ -15,6 +15,8 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ selectedQuote: propQuote,
     const [isSimulatingAI, setIsSimulatingAI] = useState(false);
     const [productSearch, setProductSearch] = useState('');
     const [isGeneratingShare, setIsGeneratingShare] = useState(false);
+    const [showAISuggestions, setShowAISuggestions] = useState(true);
+    const [aiSuggestions, setAiSuggestions] = useState<Array<{id: string; type: string; text: string; action?: () => void}>>([]);
 
     // Sync with prop changes
     useEffect(() => {
@@ -60,17 +62,95 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ selectedQuote: propQuote,
             containerUtilization,
             items: itemMetrics as QuoteItem[]
         }));
+
+        // Generate AI suggestions based on current state
+        const newSuggestions: Array<{id: string; type: string; text: string; action?: () => void}> = [];
+        
+        if (margin < 15 && subtotal > 0) {
+            newSuggestions.push({
+                id: 'margin-warning',
+                type: 'warning',
+                text: `Margin at ${margin.toFixed(1)}% is below target. Consider adjusting pricing or negotiating supplier costs.`,
+            });
+        }
+        
+        if (containerUtilization > 80 && containerUtilization < 100) {
+            newSuggestions.push({
+                id: 'container-optimize',
+                type: 'success',
+                text: `Container is ${containerUtilization.toFixed(0)}% full - excellent utilization! Consider adding small items to maximize efficiency.`,
+            });
+        } else if (containerUtilization < 50 && quote.items.length > 0) {
+            newSuggestions.push({
+                id: 'container-low',
+                type: 'info',
+                text: `Container only ${containerUtilization.toFixed(0)}% utilized. Consider consolidating with another shipment or LCL shipping.`,
+            });
+        }
+        
+        if (quote.incoterm === 'EXW' && subtotal > 50000) {
+            newSuggestions.push({
+                id: 'incoterm-suggestion',
+                type: 'info',
+                text: 'For high-value shipments, consider CIF to include insurance protection for the buyer.',
+            });
+        }
+        
+        if (quote.items.length >= 3) {
+            const categories = [...new Set(quote.items.map(i => i.product.hsCode.substring(0, 4)))];
+            if (categories.length === 1) {
+                newSuggestions.push({
+                    id: 'bundle-suggestion',
+                    type: 'success',
+                    text: 'All items share similar HS codes - eligible for streamlined customs documentation!',
+                });
+            }
+        }
+        
+        setAiSuggestions(newSuggestions);
     }, [quote.items, quote.incoterm]);
 
-    // Filter products based on search
+    // NLP-enhanced product search
     const filteredProducts = useMemo(() => {
         if (!productSearch) return PRODUCTS;
         const query = productSearch.toLowerCase();
-        return PRODUCTS.filter(p =>
-            p.name.toLowerCase().includes(query) ||
-            p.sku.toLowerCase().includes(query) ||
-            p.hsCode.includes(query)
-        );
+        
+        // Natural language synonyms and aliases
+        const searchAliases: Record<string, string[]> = {
+            'valve': ['industrial valve', 'control valve', 'gate valve', 'ball valve'],
+            'pump': ['water pump', 'hydraulic pump', 'centrifugal'],
+            'motor': ['electric motor', 'motor assembly', 'engine'],
+            'pipe': ['piping', 'tube', 'conduit'],
+            'textile': ['fabric', 'cloth', 'cotton', 'silk'],
+            'chemical': ['chemical compound', 'solvent', 'reagent'],
+            'food': ['edible', 'consumable', 'spice'],
+            'machine': ['machinery', 'equipment', 'apparatus'],
+        };
+        
+        // Expand query with aliases
+        let expandedQueries = [query];
+        Object.entries(searchAliases).forEach(([key, aliases]) => {
+            if (query.includes(key) || aliases.some(a => query.includes(a))) {
+                expandedQueries = [...expandedQueries, key, ...aliases];
+            }
+        });
+        
+        return PRODUCTS.filter(p => {
+            const searchFields = [
+                p.name.toLowerCase(),
+                p.sku.toLowerCase(),
+                p.hsCode,
+                p.category?.toLowerCase() || '',
+                p.description?.toLowerCase() || '',
+            ].join(' ');
+            
+            return expandedQueries.some(q => searchFields.includes(q));
+        }).sort((a, b) => {
+            // Sort by relevance - exact matches first
+            const aExact = a.name.toLowerCase().startsWith(query) ? 0 : 1;
+            const bExact = b.name.toLowerCase().startsWith(query) ? 0 : 1;
+            return aExact - bExact;
+        });
     }, [productSearch]);
 
     const addItem = (product: Product) => {
@@ -231,7 +311,7 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ selectedQuote: propQuote,
                 {/* Main Workspace */}
                 <div className="flex-1 bg-[#EBE7DF] dark:bg-[#1E1E24] rounded-3xl shadow-sm flex flex-col relative overflow-hidden">
 
-                    {/* Header with Margin Shield */}
+                    {/* Header with Enhanced Margin Shield */}
                     <div className="h-16 flex items-center justify-between px-6 bg-white/50 dark:bg-black/20 backdrop-blur-sm border-b border-gray-200/50 dark:border-gray-700/50">
                         <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-lg bg-gray-800 flex items-center justify-center text-white">
@@ -243,15 +323,68 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({ selectedQuote: propQuote,
                             </div>
                         </div>
 
-                        {/* The Margin Shield Visualization */}
-                        <div className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border ${getMarginColor(quote.margin)}`}>
-                            <span className="material-icons-outlined text-sm">shield</span>
-                            <div className="flex flex-col items-end leading-none">
-                                <span className="text-[10px] uppercase font-bold opacity-70">Net Margin</span>
-                                <span className="text-sm font-bold">{quote.margin.toFixed(1)}%</span>
+                        {/* Enhanced Margin Shield Visualization */}
+                        <div className="flex items-center gap-3">
+                            {/* AI Suggestions Toggle */}
+                            {aiSuggestions.length > 0 && (
+                                <button
+                                    onClick={() => setShowAISuggestions(!showAISuggestions)}
+                                    className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                                        showAISuggestions 
+                                            ? 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300' 
+                                            : 'bg-gray-100 dark:bg-gray-800 text-gray-500'
+                                    }`}
+                                    title={showAISuggestions ? 'Hide AI Suggestions' : 'Show AI Suggestions'}
+                                >
+                                    <span className="material-icons-outlined text-sm">auto_awesome</span>
+                                    <span className="hidden sm:inline">{aiSuggestions.length}</span>
+                                </button>
+                            )}
+                            
+                            {/* The Margin Shield with animated ring */}
+                            <div className={`relative flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all ${getMarginColor(quote.margin)}`}>
+                                {quote.margin < 10 && (
+                                    <div className="absolute inset-0 rounded-lg animate-pulse-ring border-2 border-red-400/50" />
+                                )}
+                                <span className="material-icons-outlined text-sm">shield</span>
+                                <div className="flex flex-col items-end leading-none">
+                                    <span className="text-[10px] uppercase font-bold opacity-70">Margin Shield™</span>
+                                    <span className="text-sm font-bold">{quote.margin.toFixed(1)}%</span>
+                                </div>
                             </div>
                         </div>
                     </div>
+                    
+                    {/* AI Suggestions Bar */}
+                    {showAISuggestions && aiSuggestions.length > 0 && (
+                        <div className="px-6 py-3 bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20 border-b border-purple-100 dark:border-purple-800/30">
+                            <div className="flex items-start gap-3">
+                                <span className="material-icons-outlined text-purple-500 text-lg mt-0.5">auto_awesome</span>
+                                <div className="flex-1">
+                                    <p className="text-xs font-semibold text-purple-700 dark:text-purple-300 uppercase mb-1.5">AI Insights</p>
+                                    <div className="space-y-1.5">
+                                        {aiSuggestions.slice(0, 2).map(suggestion => (
+                                            <div key={suggestion.id} className="flex items-start gap-2">
+                                                <span className={`material-icons-outlined text-xs mt-0.5 ${
+                                                    suggestion.type === 'warning' ? 'text-yellow-500' :
+                                                    suggestion.type === 'success' ? 'text-green-500' : 'text-blue-500'
+                                                }`}>
+                                                    {suggestion.type === 'warning' ? 'warning' : suggestion.type === 'success' ? 'check_circle' : 'lightbulb'}
+                                                </span>
+                                                <p className="text-xs text-gray-600 dark:text-gray-400 flex-1">{suggestion.text}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={() => setShowAISuggestions(false)}
+                                    className="text-gray-400 hover:text-gray-600 p-1"
+                                >
+                                    <span className="material-icons-outlined text-sm">close</span>
+                                </button>
+                            </div>
+                        </div>
+                    )}
 
                     <div className="flex-1 p-6 overflow-y-auto">
 

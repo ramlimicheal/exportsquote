@@ -1,0 +1,45 @@
+{
+    "name": "ExportFlow - AI Export Quote Manager",
+    "short_name": "ExportFlow",
+    "description": "AI-powered export quote management platform with smart container optimization and margin protection",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#F8FAFC",
+    "theme_color": "#3B82F6",
+    "orientation": "any",
+    "scope": "/",
+    "icons": [
+        {
+            "src": "/icon-192.png",
+            "sizes": "192x192",
+            "type": "image/png",
+            "purpose": "any maskable"
+        },
+        {
+            "src": "/icon-512.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ],
+    "categories": ["business", "productivity", "finance"],
+    "screenshots": [],
+    "shortcuts": [
+        {
+            "name": "New Quote",
+            "short_name": "Quote",
+            "description": "Create a new export quote",
+            "url": "/?action=new-quote",
+            "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+        },
+        {
+            "name": "Dashboard",
+            "short_name": "Dashboard",
+            "description": "View your dashboard",
+            "url": "/?view=dashboard",
+            "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+        }
+    ],
+    "related_applications": [],
+    "prefer_related_applications": false
+}
